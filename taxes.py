@@ -1,4 +1,4 @@
-import sys, re, functools
+import sys, re, itertools
 
 # parse arguments
 try:
@@ -48,24 +48,14 @@ def tax_compute(base, tax):
         tax = base / (1 - tax[1] / 100) - base
     return tax
 
-# return reversed list of tax included only, merging consecutive % or /
+# return reversed list of tax included only, merging consecutive %
 def tax_include_get(taxes):
-    old = None
-    percent = 0.0
-    for t in reversed(taxes):
-        if not t[3] or t[2] in ('/', '€') or ('<' in t[4]):   # flush continuous taxes
-            if old is not None:
-                yield (None, percent, old[2], old[3], old[4])
-                old = None
-                percent = 0.0
-        if not t[3]: continue
-        if t[2] in ('/', '€'):
-            yield t
-        else:
-            old = old or t
-            percent += t[1]
-    if old is not None:
-        yield (None, percent, old[2], old[3], old[4])
+    taxes = [x for x in taxes if x[3]]
+    groupkey = lambda t: (t[2] == '%' and '<' not in t[4]) or t
+    for key, taxes in itertools.groupby(reversed(taxes), groupkey):
+        taxes = list(taxes)
+        yield (taxes[0][2] != '%' and taxes[0][0] or None, sum([t[1] for t in taxes]), *taxes[0][2:])
+        # yield (len(taxes) == 1 and taxes[0][0] or None, sum([t[1] for t in taxes]), *taxes[0][2:])
 
 result = {
     'subtotal': 0.0,
@@ -90,9 +80,10 @@ for price in prices:
     # compute all taxes from the base excluding taxes
     base_tax = base
     for taxe in taxes:
+        if tot_taxes[taxe[0]] is not None:
+            continue # already computed by tax included
         tax_amount = tax_compute(base_tax, taxe)
-        if tot_taxes[taxe[0]] is None:
-            tot_taxes[taxe[0]] = tax_amount
+        tot_taxes[taxe[0]] = tax_amount
 
         # add in base if affect subsequent taxes
         if '>' in taxe[4]:
