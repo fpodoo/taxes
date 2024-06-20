@@ -72,7 +72,7 @@ for i in range(lines):
 
     # deduce base from price included
     for taxi in list(tax_include_get(taxes)):
-        base = tax_compute_include(base, taxi)[1]
+        base = round(tax_compute_include(base, taxi)[1], 1)
 
     # compute all taxes from the base excluding taxes
     base = round(base, 2)
