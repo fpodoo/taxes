@@ -34,7 +34,7 @@ def tax_compute_include(base, tax):
         tax = base - base / (1+tax[1] / 100.0)
     elif tax[2] == '/':
         tax = base * tax[1] / 100.0
-    return tax, base - tax, base
+    return tax
 
 # Compute taxes for one line, price excluded
 def tax_compute(base, tax):
@@ -44,7 +44,7 @@ def tax_compute(base, tax):
         tax = base * tax[1] / 100.0
     elif tax[2] == '/':
         tax = base / (1 - tax[1] / 100) - base
-    return tax, base, base + tax
+    return tax
 
 # return reversed list of tax included only, merging consecutive % or /
 def tax_include_get(taxes):
@@ -72,17 +72,17 @@ for i in range(lines):
 
     # deduce base from price included
     for taxi in list(tax_include_get(taxes)):
-        base = tax_compute_include(base, taxi)[1]
+        base -= tax_compute_include(base, taxi)
 
     # compute all taxes from the base excluding taxes
     base = round(base, 2)
     for taxe in taxes:
-        r = tax_compute(base, taxe)
-        tot_taxes[taxe[0]] += r[0]
+        tax_amount = tax_compute(base, taxe)
+        tot_taxes[taxe[0]] += tax_amount
 
         # add in base if affect subsequent taxes
         if taxe[4]:
-            base += round(r[0], 2)
+            base += round(tax_amount, 2)
 
     # round per line if necessary
     if perline:
