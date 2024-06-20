@@ -104,12 +104,6 @@ for price in prices:
         result['tax'][key] += val
     result['total'] += tot_tax + base
 
-# round globally everything
-result['subtotal'] = result['total'] = round(result['subtotal'], 2)
-for key, val in result['tax'].items():
-    result['tax'][key] = round(val, 2)
-    result['total'] += round(val, 2)
-
 print('%-7s     %7s  %7s  %7s' % ('Price', 'HTVA', 'Taxes', 'TVAC'))
 for line in lines:
     print('%7.2f    \033[1m %7.2f \033[0m %7.2f  %7.2f' % tuple(line))
