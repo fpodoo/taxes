@@ -54,8 +54,7 @@ def tax_include_get(taxes):
     groupkey = lambda t: (t[2] == '%' and '<' not in t[4]) or t
     for key, taxes in itertools.groupby(reversed(taxes), groupkey):
         taxes = list(taxes)
-        yield (taxes[0][2] != '%' and taxes[0][0] or None, sum([t[1] for t in taxes]), *taxes[0][2:])
-        # yield (len(taxes) == 1 and taxes[0][0] or None, sum([t[1] for t in taxes]), *taxes[0][2:])
+        yield (len(taxes) == 1 and taxes[0][0] or None, sum([t[1] for t in taxes]), *taxes[0][2:])
 
 result = {
     'subtotal': 0.0,
@@ -106,13 +105,10 @@ for price in prices:
     result['total'] += tot_tax + base
 
 # round globally everything
-result['subtotal'] = round(result['subtotal'], 2)
-result['total'] = round(result['total'], 2)
+result['subtotal'] = result['total'] = round(result['subtotal'], 2)
 for key, val in result['tax'].items():
     result['tax'][key] = round(val, 2)
-
-# Adjust first line if total does not match (because of tax included)
-lines[0][1] += result['subtotal'] - sum(map(lambda x: x[1], lines))
+    result['total'] += round(val, 2)
 
 print('%-7s     %7s  %7s  %7s' % ('Price', 'HTVA', 'Taxes', 'TVAC'))
 for line in lines:
