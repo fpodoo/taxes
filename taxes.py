@@ -3,7 +3,7 @@ import sys, re, functools
 # parse arguments
 try:
     price = float(sys.argv[1])
-    lines = int(sys.argv[2])
+    nbrlines = int(sys.argv[2])
     perline = not bool(int(sys.argv[3]))
     taxes = []
     for tax in sys.argv[4:]:
@@ -65,8 +65,8 @@ result = {
     'tax': dict.fromkeys(map(lambda x: x[0], taxes), 0.0)
 }
 
-print('%10s  %7s     %7s  %7s  %7s' % ('', 'Price', 'HTVA', 'Taxes', 'TVAC'))
-for i in range(lines):
+lines = []
+for i in range(nbrlines):
     base = price
     tot_taxes = dict.fromkeys(map(lambda x: x[0], taxes), 0.0)
 
@@ -75,7 +75,6 @@ for i in range(lines):
         base -= tax_compute_include(base, taxi)
 
     # compute all taxes from the base excluding taxes
-    base = round(base, 2)
     for taxe in taxes:
         tax_amount = tax_compute(base, taxe)
         tot_taxes[taxe[0]] += tax_amount
@@ -86,7 +85,6 @@ for i in range(lines):
 
     # round per line if necessary
     if perline:
-        base = round(base, 2)
         for key, val in tot_taxes.items():
             tot_taxes[key] = round(tot_taxes[key], 2)
 
@@ -95,18 +93,24 @@ for i in range(lines):
     if all(map(lambda x: x[3], taxes)):
         base = price - tot_tax
 
-    print('%-10s  %7.2f     %7.2f  %7.2f  %7.2f' % ('Line '+str(i), price, base, tot_tax, base+tot_tax))
+    lines.append(['Line '+str(i), price, round(base, 2), tot_tax, round(base+tot_tax,2)])
     result['subtotal'] += base
     for key, val in tot_taxes.items():
         result['tax'][key] += val
     result['total'] += tot_tax + base
 
+# Adjust first line if total does not match (because of tax included)
+lines[0][2] += result['subtotal'] - sum(map(lambda x: x[2], lines))
+
+print('%10s  %7s     %7s  %7s  %7s' % ('', 'Price', 'HTVA', 'Taxes', 'TVAC'))
+for line in lines:
+    print('%-10s  %7.2f    \033[1m %7.2f \033[0m %7.2f  %7.2f' % tuple(line))
 
 print()
 print('          %-12s  %7.2f' % ('Subtotal', result['subtotal']))
 for key, val in result['tax'].items():
-    print('          %-12s           %7.2f' % (key, val))
-print('          %-12s                    %7.2f' % ('Total', result['total']))
+    print('          %-12s        \033[1m   %7.2f \033[0m' % (key, val))
+print('          %-12s            \033[1m        %7.2f \033[0m' % ('Total', result['total']))
 print()
 
 
