@@ -105,5 +105,6 @@ print('          %-12s  %7.2f' % ('Subtotal', result['subtotal']))
 for key, val in result['tax'].items():
     print('          %-12s           %7.2f' % (key, val))
 print('          %-12s                    %7.2f' % ('Total', result['total']))
+print()
 
 

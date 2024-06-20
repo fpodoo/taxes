@@ -1,4 +1,4 @@
-all: beincl india round
+all: beincl ecotax india perline global quebec
 
 beincl:
 	python3 taxes.py 21.53 2 0 21%i
