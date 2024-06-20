@@ -19,4 +19,4 @@ quebec:
 	python3 taxes.py 100 1 1 5%\> 10%
 
 quebecincl:
-	python3 taxes.py 120.50 1 1 5%i\> 10%i\>
+	python3 taxes.py 115.50 1 1 5%i\> 10%i\>

@@ -51,8 +51,10 @@ def tax_include_get(taxes):
     old = old_value = None
     for t in reversed(taxes):
         if not t[3]: continue  # exclude taxes that are not included
-        if old and t[2] != old:
+        if old and ((t[2] != old) or t[4]):
             yield (None, old_value, old, False)
+            old = None
+            old_value = 0.0
         old = t[2]
         old_value = (old_value or 0.0) + t[1]
     if old:
@@ -72,7 +74,8 @@ for i in range(nbrlines):
 
     # deduce base from price included
     for taxi in list(tax_include_get(taxes)):
-        base -= tax_compute_include(base, taxi)
+        x = round(tax_compute_include(base, taxi),2)
+        base -= x
 
     # compute all taxes from the base excluding taxes
     base_tax = base
