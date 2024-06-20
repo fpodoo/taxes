@@ -1,5 +1,6 @@
 import sys, re, functools
 
+# parse arguments
 try:
     price = float(sys.argv[1])
     lines = int(sys.argv[2])
@@ -25,7 +26,7 @@ except:
     raise
 
 
-# Compute taxes for one line
+# Compute taxes for one line, price included in taxes
 def tax_compute_include(base, tax):
     if tax[2] == '€':
         tax = tax[1]
@@ -35,6 +36,7 @@ def tax_compute_include(base, tax):
         tax = base * tax[1] / 100.0
     return tax, base - tax, base
 
+# Compute taxes for one line, price excluded
 def tax_compute(base, tax):
     if tax[2] == '€':
         tax = tax[1]
@@ -44,7 +46,7 @@ def tax_compute(base, tax):
         tax = base / (1 - tax[1] / 100) - base
     return tax, base, base + tax
 
-# return list of tax included to apply, merging consecutive % or /
+# return reversed list of tax included only, merging consecutive % or /
 def tax_include_get(taxes):
     old = old_value = None
     for t in reversed(taxes):
@@ -68,7 +70,7 @@ for i in range(lines):
     base = price
     tot_taxes = dict.fromkeys(map(lambda x: x[0], taxes), 0.0)
 
-    # 1/ deduce price included
+    # deduce base from price included
     for taxi in list(tax_include_get(taxes)):
         base = tax_compute_include(base, taxi)[1]
 
@@ -78,7 +80,7 @@ for i in range(lines):
         r = tax_compute(base, taxe)
         tot_taxes[taxe[0]] += r[0]
 
-        # if affect subsequent taxes
+        # add in base if affect subsequent taxes
         if taxe[4]:
             base += round(r[0], 2)
 
