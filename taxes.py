@@ -2,13 +2,12 @@ import sys, re, functools
 
 # parse arguments
 try:
-    price = float(sys.argv[1])
-    nbrlines = int(sys.argv[2])
-    perline = not bool(int(sys.argv[3]))
+    prices = [float(x) for x in sys.argv[1].split(',')]
+    perline = not bool(int(sys.argv[2]))
     taxes = []
-    for tax in sys.argv[4:]:
-        g = re.match(r'([0-9.]+)([%€/])([i]?)([>]?[abc]?)', tax)
-        taxes.append((g[0], float(g[1]), g[2], g[3], g[4]))
+    for tax in sys.argv[3:]:
+        g = re.match(r'([0-9.]+)([%€/])([i]?)([<>]*)[abc]?', tax)
+        taxes.append([g[0], float(g[1]), g[2], g[3], g[4]])
     assert all(taxes)
 except:
     print('''Usage: taxes.py 100.0 3 1 21% 5€
@@ -21,6 +20,7 @@ except:
         . / (divided)
         . i tax included in price
         . > affect subsequent taxes
+        . < affect previous taxes (price included)
         . [abc] optional suffix to differenciate same taxes
     ''')
     raise
@@ -48,18 +48,22 @@ def tax_compute(base, tax):
 
 # return reversed list of tax included only, merging consecutive % or /
 def tax_include_get(taxes):
-    old = old_value = None
+    old = None
+    percent = 0.0
     for t in reversed(taxes):
-        if not t[3]: continue  # exclude taxes that are not included
-        if old and ((t[2] != old) or t[4]):
-            yield (None, old_value, old, False)
-            old = None
-            old_value = 0.0
-        old = t[2]
-        old_value = (old_value or 0.0) + t[1]
-    if old:
-        yield (None, old_value, old, False)
-
+        if not t[3] or t[2] in ('/', '€') or ('<' in t[4]):   # flush continuous taxes
+            if old is not None:
+                yield (None, percent, old[2], old[3], old[4])
+                old = None
+                percent = 0.0
+        if not t[3]: continue
+        if t[2] in ('/', '€'):
+            yield t
+        else:
+            old = old or t
+            percent += t[1]
+    if old is not None:
+        yield (None, percent, old[2], old[3], old[4])
 
 result = {
     'subtotal': 0.0,
@@ -68,23 +72,28 @@ result = {
 }
 
 lines = []
-for i in range(nbrlines):
+for price in prices:
     base = price
-    tot_taxes = dict.fromkeys(map(lambda x: x[0], taxes), 0.0)
+    tot_taxes = dict.fromkeys(map(lambda x: x[0], taxes), None)
 
     # deduce base from price included
+    base_tax = base
     for taxi in list(tax_include_get(taxes)):
-        x = round(tax_compute_include(base, taxi),2)
+        x = round(tax_compute_include(base_tax, taxi),2)
         base -= x
+        if '<' in taxi[4]: base_tax -= x
+        if taxi[0] is not None:
+            tot_taxes[taxi[0]] = x
 
     # compute all taxes from the base excluding taxes
     base_tax = base
     for taxe in taxes:
         tax_amount = tax_compute(base_tax, taxe)
-        tot_taxes[taxe[0]] += tax_amount
+        if tot_taxes[taxe[0]] is None:
+            tot_taxes[taxe[0]] = tax_amount
 
         # add in base if affect subsequent taxes
-        if taxe[4]:
+        if '>' in taxe[4]:
             base_tax += round(tax_amount, 2)
 
     # round per line if necessary
@@ -97,7 +106,7 @@ for i in range(nbrlines):
     if all(map(lambda x: x[3], taxes)):
         base = price - tot_tax
 
-    lines.append(['Line '+str(i), price, round(base, 2), tot_tax, round(base+tot_tax,2)])
+    lines.append([price, round(base, 2), tot_tax, round(base+tot_tax,2)])
     result['subtotal'] += base
     for key, val in tot_taxes.items():
         result['tax'][key] += val
@@ -106,15 +115,13 @@ for i in range(nbrlines):
 # Adjust first line if total does not match (because of tax included)
 lines[0][2] += result['subtotal'] - sum(map(lambda x: x[2], lines))
 
-print('%10s  %7s     %7s  %7s  %7s' % ('', 'Price', 'HTVA', 'Taxes', 'TVAC'))
+print('%-7s     %7s  %7s  %7s' % ('Price', 'HTVA', 'Taxes', 'TVAC'))
 for line in lines:
-    print('%-10s  %7.2f    \033[1m %7.2f \033[0m %7.2f  %7.2f' % tuple(line))
-
-print()
-print('          %-12s  %7.2f' % ('Subtotal', result['subtotal']))
+    print('%7.2f    \033[1m %7.2f \033[0m %7.2f  %7.2f' % tuple(line))
+print('%-10s  %7.2f' % ('Subtotal', result['subtotal']))
 for key, val in result['tax'].items():
-    print('          %-12s        \033[1m   %7.2f \033[0m' % (key, val))
-print('          %-12s            \033[1m        %7.2f \033[0m' % ('Total', result['total']))
+    print('%-10s        \033[1m   %7.2f \033[0m' % (key, val))
+print('%-10s            \033[1m        %7.2f \033[0m' % ('Total', result['total']))
 print()
 
 
