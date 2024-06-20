@@ -6,20 +6,20 @@ try:
     perline = not bool(int(sys.argv[3]))
     taxes = []
     for tax in sys.argv[4:]:
-        g = re.match(r'([0-9.]+)([%$/])([i]?)([>]?[abc]?)', tax)
+        g = re.match(r'([0-9.]+)([%€/])([i]?)([>]?[abc]?)', tax)
         taxes.append((g[0], float(g[1]), g[2], g[3], g[4]))
     assert all(taxes)
 except:
-    print('''Usage: taxes.py 100.0 3 1 21% 5$
+    print('''Usage: taxes.py 100.0 3 1 21% 5€
     - 100.0: the price
     - 3: number of lines in the SO (all lines have same value)
     - 1: 1 = round globally, 0 = round per line
     - taxes: 21%i
         . % (percent)
-        . $ (fixed)
+        . € (fixed)
         . / (divided)
         . i tax included in price
-        . > affect subsequent taxes (not implemented yet)
+        . > affect subsequent taxes
         . [abc] optional suffix to differenciate same taxes
     ''')
     raise
@@ -27,18 +27,18 @@ except:
 
 # Compute taxes for one line
 def tax_compute_include(base, tax):
-    if tax[2] == '$':
+    if tax[2] == '€':
         tax = tax[1]
-    if tax[2] == '%':
+    elif tax[2] == '%':
         tax = base - base / (1+tax[1] / 100.0)
     elif tax[2] == '/':
         tax = base * tax[1] / 100.0
     return tax, base - tax, base
 
-def tax_compute(base, tax, ti=None):
-    if tax[2] == '$':
+def tax_compute(base, tax):
+    if tax[2] == '€':
         tax = tax[1]
-    if tax[2] == '%':
+    elif tax[2] == '%':
         tax = base * tax[1] / 100.0
     elif tax[2] == '/':
         tax = base / (1 - tax[1] / 100) - base
@@ -48,7 +48,7 @@ def tax_compute(base, tax, ti=None):
 def tax_include_get(taxes):
     old = old_value = None
     for t in reversed(taxes):
-        if not t[3]: continue
+        if not t[3]: continue  # exclude taxes that are not included
         if old and t[2] != old:
             yield (None, old_value, old, False)
         old = t[2]
@@ -78,6 +78,10 @@ for i in range(lines):
         r = tax_compute(base, taxe)
         tot_taxes[taxe[0]] += r[0]
 
+        # if affect subsequent taxes
+        if taxe[4]:
+            base += round(r[0], 2)
+
     # round per line if necessary
     if perline:
         base = round(base, 2)
@@ -85,7 +89,7 @@ for i in range(lines):
             tot_taxes[key] = round(tot_taxes[key], 2)
 
     # adjust for one cent in base, if all taxes are included
-    tot_tax = functools.reduce(lambda x, y: x+y, tot_taxes.values(), 0.0)
+    tot_tax = functools.reduce(lambda x, y: round(x,2)+y, tot_taxes.values(), 0.0)
     if all(map(lambda x: x[3], taxes)):
         base = price - tot_tax
 
