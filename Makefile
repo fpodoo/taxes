@@ -1,4 +1,4 @@
-all: beincl ecotax india perline global quebec quebecincl brazil mexico
+all: beincl ecotax india indiacess perline global quebec quebecincl brazil mexico
 
 beincl:
 	python3 taxes.py 21.53,21.53 1 21%i
@@ -25,7 +25,7 @@ brazil:
 	python3 taxes.py 48.0 1 5/i 3/i 9/i 15/i 0.65/i
 
 indiacess:
-	python3 taxes.py 118 0 9%i 9%ib 1%
+	python3 taxes.py 118.04 0 9%i 9%ib 1%
 
 mexico:
 	python3 taxes.py 1199.0,1699.0,1999.0,10999.0,11999.0,11999.0,11999.0 1 16%i

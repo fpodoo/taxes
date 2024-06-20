@@ -5,9 +5,11 @@ try:
     prices = [float(x) for x in sys.argv[1].split(',')]
     perline = not bool(int(sys.argv[2]))
     taxes = []
+    taxes_dict = {}
     for tax in sys.argv[3:]:
         g = re.match(r'([0-9.]+)([%€/])([i]?)([<>]*)[abc]?', tax)
         taxes.append([g[0], float(g[1]), g[2], g[3], g[4]])
+        taxes_dict[g[0]] = (float(g[1]), g[2], g[3], g[4])
     assert all(taxes)
 except:
     print('''Usage: taxes.py 100.0 3 1 21% 5€
@@ -82,7 +84,7 @@ for price in prices:
         x = round(tax_compute_include(base_tax, taxi),2)
         base -= x
         if '<' in taxi[4]: base_tax -= x
-        if taxi[0] is not None:
+        if taxi[0] is not None:                          # None = Aggregated: will be recomputed from base excluded
             tot_taxes[taxi[0]] = x
 
     # compute all taxes from the base excluding taxes
@@ -99,21 +101,27 @@ for price in prices:
     # round per line if necessary
     if perline:
         for key, val in tot_taxes.items():
-            tot_taxes[key] = round(tot_taxes[key], 2)
+            tot_taxes[key] = round(val, 2)
 
-    # adjust for one cent in base, if all taxes are included
-    tot_tax = functools.reduce(lambda x, y: round(x,2)+y, tot_taxes.values(), 0.0)
-    if all(map(lambda x: x[3], taxes)):
-        base = price - tot_tax
+    # adjust for one cent in base, for taxes included
+    tot_tax_incl = sum([x for key, x in tot_taxes.items() if taxes_dict[key][2]])
+    base = price - tot_tax_incl
 
+    tot_tax = sum([x for x in tot_taxes.values()])
     lines.append([price, round(base, 2), tot_tax, round(base+tot_tax,2)])
     result['subtotal'] += base
     for key, val in tot_taxes.items():
         result['tax'][key] += val
     result['total'] += tot_tax + base
 
+# round globally everything
+result['subtotal'] = round(result['subtotal'], 2)
+result['total'] = round(result['total'], 2)
+for key, val in result['tax'].items():
+    result['tax'][key] = round(val, 2)
+
 # Adjust first line if total does not match (because of tax included)
-lines[0][2] += result['subtotal'] - sum(map(lambda x: x[2], lines))
+lines[0][1] += result['subtotal'] - sum(map(lambda x: x[1], lines))
 
 print('%-7s     %7s  %7s  %7s' % ('Price', 'HTVA', 'Taxes', 'TVAC'))
 for line in lines:
