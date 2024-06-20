@@ -75,13 +75,14 @@ for i in range(nbrlines):
         base -= tax_compute_include(base, taxi)
 
     # compute all taxes from the base excluding taxes
+    base_tax = base
     for taxe in taxes:
-        tax_amount = tax_compute(base, taxe)
+        tax_amount = tax_compute(base_tax, taxe)
         tot_taxes[taxe[0]] += tax_amount
 
         # add in base if affect subsequent taxes
         if taxe[4]:
-            base += round(tax_amount, 2)
+            base_tax += round(tax_amount, 2)
 
     # round per line if necessary
     if perline:
