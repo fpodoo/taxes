@@ -1,4 +1,4 @@
-all: beincl ecotax india indiacess perline global quebec quebecincl brazil mexico las0 las1 las2 firstl
+all: beincl ecotax india indiacess perline global quebec quebecincl brazil mexico las0 las1 las2 firstl nofirstl
 
 beincl:
 	python3 taxes.py 21.53,21.53 1 21%i
@@ -43,3 +43,5 @@ firstl:
 	python3 taxes.py 0.04 1 23%i 23%ib 23%ic
 	python3 taxes.py 0.04,0.04 1 23%i 23%ib 23%ic
 
+nofirstl:
+	python3 taxes.py 21.53,21.53,21.53,21.53,21.53,21.53,21.53 1 21%i
