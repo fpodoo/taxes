@@ -70,9 +70,9 @@ for price in prices:
     # deduce base from price included
     base_tax = base
     for taxi in list(tax_include_get(taxes)):
-        x = round(tax_compute_include(base_tax, taxi),2)
-        base -= x
-        if '<' in taxi[4]: base_tax -= x
+        x = tax_compute_include(base_tax, taxi)
+        base -= round(x, 2)                              # round base but not tax
+        if '<' in taxi[4]: base_tax -= round(x, 2)
         if taxi[0] is not None:                          # None = Aggregated: will be recomputed from base excluded
             tot_taxes[taxi[0]] = x
 
