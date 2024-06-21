@@ -104,6 +104,13 @@ for price in prices:
         result['tax'][key] += val
     result['total'] += tot_tax + base
 
+# Round and adjust cents on first line for if tax included grouped
+result['subtotal'] = round(result['subtotal'], 2)
+for key, val in result['tax'].items():
+    result['tax'][key] = round(val, 2)
+lines[0][1] += result['subtotal'] - sum(map(lambda x: round(x[1],2), lines))
+result['total'] = result['subtotal'] + sum(result['tax'].values())
+
 print('%-7s     %7s  %7s  %7s' % ('Price', 'HTVA', 'Taxes', 'TVAC'))
 for line in lines:
     print('%7.2f    \033[1m %7.2f \033[0m %7.2f  %7.2f' % tuple(line))
